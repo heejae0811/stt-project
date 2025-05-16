@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
 import os
 import glob
-import re
 import pandas as pd
 import matplotlib.pyplot as plt
-from pathlib import Path
 from wordcloud import WordCloud
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.model_selection import train_test_split

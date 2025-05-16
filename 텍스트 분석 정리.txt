@@ -1,0 +1,109 @@
+파이썬으로 가능한 텍스트 분석 정리
+
+1. 전처리 (Text Preprocessing)
+
+토큰화 (Tokenization): 문장을 단어/문장 단위로 분리
+예) "오늘 날씨 좋다" → ["오늘", "날씨", "좋다"]
+
+정규화 (Normalization): 대소문자 통일, 특수문자 제거
+
+불용어 제거: 의미 없는 단어(예: '이', '은', '그리고') 제거
+
+형태소 분석: 단어의 품사 분석 및 어간 추출
+
+띄어쓰기 교정 / 맞춤법 검사: 한국어 띄어쓰기 및 철자 보정
+
+주요 라이브러리: re, nltk, soynlp, KoNLPy, Okt, Mecab, py-hanspell, pykospacing
+
+───────────────────────────────
+
+2. 기초 분석 (기술 통계 수준)
+
+텍스트 길이 분석: 단어 수, 문장 수, 평균 길이
+
+단어 빈도 분석: 가장 많이 등장한 단어
+
+워드클라우드: 주요 단어 시각화
+
+주요 라이브러리: collections.Counter, wordcloud, matplotlib, pandas
+
+───────────────────────────────
+
+3. 감정 분석 (Sentiment Analysis)
+
+긍정 / 부정 / 중립 분류
+
+감정 점수 (0.0 ~ 1.0) 부여
+예) "이 제품 너무 좋아요!" → 긍정 (0.98)
+
+주요 모델: snunlp/KR-FinBERT-SC, KoBERT, transformers
+
+영어용: TextBlob, VADER
+
+───────────────────────────────
+
+4. 의도 분류 (Intent Classification)
+
+규칙 기반 분류: ? 포함 → 질문, "해주세요" → 요청
+
+모델 기반 분류: 머신러닝으로 질문/요청/제안/불만/진술 등 분류
+
+🔧 주요 라이브러리: sklearn, transformers, 사용자 정의 규칙
+
+───────────────────────────────
+
+5. 텍스트 요약 (Summarization)
+
+추출 요약: 핵심 문장 뽑기
+
+생성 요약: 새 문장으로 요약 생성
+
+🔧 대표 모델: KoBART, T5, LexRank, TextRank, sumy
+
+───────────────────────────────
+
+6. 키워드 추출 (Keyword Extraction)
+
+TF-IDF: 단어 중요도 분석
+
+TextRank: 연결 중심성 기반
+
+KRWordRank: 반복 학습 기반 한국어 키워드 추출
+
+주요 라이브러리: sklearn, krwordrank, textrankr, gensim
+
+───────────────────────────────
+
+7. 토픽 모델링 (Topic Modeling)
+
+LDA (Latent Dirichlet Allocation): 문서 속 주요 주제 추출
+
+NMF, LSA: 의미 공간 기반 토픽 도출
+
+🔧 주요 라이브러리: gensim, sklearn
+
+───────────────────────────────
+
+8. 텍스트 분류 (Text Classification)
+
+뉴스 카테고리, 리뷰 태그, 고객 문의 유형 등 자동 분류
+
+지도학습 기반 분류기 학습: Naive Bayes, SVM, BERT 등
+
+주요 라이브러리: sklearn, transformers, fastText
+
+───────────────────────────────
+
+9. 의미 분석 / 관계 추출 (NER, Parsing)
+
+개체명 인식 (NER): 인물, 장소, 조직 등 추출
+
+의존 구문 분석 / 관계 추출: 단어 간 관계 구조 분석
+
+주요 라이브러리: nltk, spaCy, transformers, stanza
+
+───────────────────────────────
+
+✔ 참고:
+대부분의 작업은 pandas, sklearn, transformers, KoNLPy, matplotlib를 함께 사용
+사전학습 모델은 HuggingFace의 transformers로 쉽게 적용 가능
