@@ -3,6 +3,8 @@ from konlpy.tag import Okt
 from collections import Counter
 import matplotlib.pyplot as plt
 from matplotlib import rc
+from sklearn.feature_extraction.text import TfidfVectorizer
+from wordcloud import WordCloud
 
 # 한글 폰트 설정
 rc('font', family='AppleGothic')
@@ -16,18 +18,12 @@ okt = Okt()
 
 # 불용어 정의
 stopwords = set([
-    # 조사 및 의미 없는 단어
-    "그냥", "이렇게", "조금", "좀", "거", "것", "근데", "이거", "저거", "그거",
-    "그렇고", "그래서", "정도", "약간", "그", "이", "저", "또", "막", "좀", "때",
-    "게", "데", "더", "되게", "에서", "으로", "까지", "도", "만", "든", "뿐", "중",
-    "요", "듯", "수", "등", "의", "과", "및", "에서", "에게", "와", "랑", "하고",
-
-    # 동사/형용사 중 의미 약한 것들
-    "하다", "있다", "같다", "되다", "그렇다", "이렇다", "오다", "보다", "주다", "차다", "않다", "어떻다", "그렇다",
-
-    # 내가 추가
-    "또한", "점", "건", "뭐", "번", "쪽", "해", "에", "예", "내", "네", "제", "안", "얘", "걔", "쟤", "왜", "이제", "이게", "그게", "저게",
-    "뭐라다", "워낙", "걸", "수도", "만하", "여기", "저기", "악", "아주", "나", "너", "우리", "구체", "지금", "점", "진짜", "정말"
+    "걔", "거", "건", "것", "게", "그", "그거", "그게", "그냥", "그렇고", "그렇다", "근데", "그래서", "같다",
+    "나", "내", "너", "네", "도", "듯", "등", "막", "만", "만하", "뭐", "뭐라다", "번",
+    "보다", "뿐", "수", "수도", "안", "않다", "어떻다", "에", "에게", "여기", "예", "오다",
+    "우리", "으로", "이", "이게", "이렇게", "이렇다", "이제", "있다", "저", "저거", "저게",
+    "저기", "점", "정도", "정말", "제", "조금", "주다", "지금", "진짜", "좀", "쪽", "차다", "하다", "하고",
+    "또", "또한", "때", "되다", "더", "얘", "데", "구체", "해", "아주", "나다", "약간", "원래", "걸", "왜",
 ])
 
 # 텍스트 분석 함수
@@ -47,15 +43,27 @@ def top_words_by_preference(df, text_columns, label_col='preferred_same_mode', t
                 ]
                 words_all.extend(words)
 
+            # 빈도수
             word_counts = Counter(words_all)
-            top_words = word_counts.most_common(top_n)
+            top_words = dict(word_counts.most_common(top_n))
 
-            for word, count in top_words:
+            # TF-IDF
+            vectorizer = TfidfVectorizer(tokenizer=lambda x: [
+                word for word, pos in okt.pos(x, stem=True)
+                if pos in ['Noun', 'Adjective', 'Verb'] and word not in stopwords
+            ])
+            tfidf_matrix = vectorizer.fit_transform(texts)
+            feature_names = vectorizer.get_feature_names_out()
+            tfidf_scores = tfidf_matrix.mean(axis=0).A1
+            tfidf_dict = dict(zip(feature_names, tfidf_scores))
+
+            for word, count in top_words.items():
                 results.append({
                     'text_column': text_col,
                     'preferred_same_mode': "같은 모드" if group_val == 0 else "다른 모드",
                     'word': word,
-                    'count': count
+                    'count': count,
+                    'tfidf': round(tfidf_dict.get(word, 0), 4)  # tfidf 없으면 0
                 })
 
     return pd.DataFrame(results)
@@ -63,6 +71,7 @@ def top_words_by_preference(df, text_columns, label_col='preferred_same_mode', t
 # 실행
 text_columns = ['text1', 'text2', 'text3', 'text4']
 top_words_df = top_words_by_preference(df, text_columns, label_col='preferred_same_mode', top_n=20)
+
 column_titles = {
     'text1': '안마의자에서 하신 운동이 어떠셨나요?',
     'text2': '운동 중 마사지가 어떠셨나요?',
@@ -82,12 +91,24 @@ top_words_df.to_excel('./results/preferred_same_mode_results.xlsx', index=False)
 
 # 시각화
 for (text_col, group_val), subset in top_words_df.groupby(['text_column', 'preferred_same_mode']):
-    plt.figure(figsize=(10, 5))
-    plt.bar(subset['word'], subset['count'])
-    plt.title(f'{column_titles.get(text_col, text_col)} - {group_val} 그룹 상위 단어')
-    plt.xlabel('단어')
-    plt.ylabel('빈도수')
+    # 빈도수 +  TF-IDF
+    plt.figure(figsize=(12, 6))
+    plt.bar(subset['word'], subset['count'], label='빈도수')
+    plt.plot(subset['word'], subset['tfidf'] * max(subset['count']), color='red', marker='o', label='TF-IDF (스케일)')
+    plt.title(f'{column_titles.get(text_col, text_col)} - {group_val} 그룹 상위 단어', pad=10)
+    plt.ylabel('빈도수 + TF-IDF')
     plt.xticks(rotation=45)
     plt.grid(True, axis='y', color='lightgray', linestyle='--', linewidth=0.2)
+    plt.legend()
     plt.tight_layout()
+    plt.show()
+
+    # 워드 클라우드
+    word_freqs = dict(zip(subset['word'], subset['count']))
+    wc = WordCloud(font_path='/System/Library/Fonts/Supplemental/AppleGothic.ttf', background_color='white', width=1000, height=500)
+    plt.figure(figsize=(12, 6))
+    wc.generate_from_frequencies(word_freqs)
+    plt.imshow(wc, interpolation='bilinear')
+    plt.axis('off')
+    plt.title(f'{column_titles.get(text_col, text_col)} - {group_val} 그룹 워드클라우드', pad=20)
     plt.show()
